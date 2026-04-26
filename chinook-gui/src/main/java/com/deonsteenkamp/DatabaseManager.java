@@ -48,17 +48,17 @@ public class DatabaseManager {
     public static DefaultTableModel getEmployeesTableModel() {
 
         DefaultTableModel model = new DefaultTableModel();
-        model.addColumn("ID");
-        model.addColumn("Full Name");
-        model.addColumn("Job Title");
-        model.addColumn("Manager"); // The data from the self-join
-        model.addColumn("Hire Date");
+        model.addColumn("First Name");
+        model.addColumn("Last Name");
+        model.addColumn("Title");
+        model.addColumn("City");
+        model.addColumn("Country");
+        model.addColumn("Phone");
+        model.addColumn("Supervisor");
+        model.addColumn("Active");
 
-        String query = "SELECT e.EmployeeId, " +
-                "CONCAT(e.FirstName, ' ', e.LastName) AS EmployeeName, " +
-                "e.Title, " +
-                "CONCAT(m.FirstName, ' ', m.LastName) AS ManagerName, " +
-                "e.HireDate " +
+        String query = "SELECT e.FirstName, e.LastName, e.Title, e.City, e.Country, e.Phone, " +
+                "CONCAT(m.FirstName, ' ', m.LastName) AS SupervisorName " +
                 "FROM Employee e " +
                 "LEFT JOIN Employee m ON e.ReportsTo = m.EmployeeId;";
 
@@ -68,11 +68,14 @@ public class DatabaseManager {
 
             while (rs.next()) {
                 model.addRow(new Object[] {
-                        rs.getInt("EmployeeId"),
-                        rs.getString("EmployeeName"),
+                        rs.getString("FirstName"),
+                        rs.getString("LastName"),
                         rs.getString("Title"),
-                        rs.getString("ManagerName") == null ? "N/A (Top Level)" : rs.getString("ManagerName"),
-                        rs.getString("HireDate")
+                        rs.getString("City"),
+                        rs.getString("Country"),
+                        rs.getString("Phone"),
+                        rs.getString("SupervisorName") == null ? "N/A" : rs.getString("SupervisorName"), "yes"
+
                 });
             }
         } catch (SQLException e) {
