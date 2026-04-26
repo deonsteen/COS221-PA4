@@ -10,7 +10,7 @@ public class App {
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
-            public void run() { // <-- You were missing this method declaration
+            public void run() {
                 MainFrame frame = new MainFrame();
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
