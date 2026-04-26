@@ -1,10 +1,7 @@
 package com.deonsteenkamp;
 
-import java.sql.Statement;
-import java.sql.ResultSet;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
+import javax.swing.table.DefaultTableModel;
 
 public class DatabaseManager {
 
@@ -46,6 +43,36 @@ public class DatabaseManager {
             System.err.println("Make sure MariaDB is running and your DB_PASSWORD is set.");
             e.printStackTrace();
         }
+    }
+
+    public static DefaultTableModel getEmployeesTableModel() {
+
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("ID");
+        model.addColumn("First Name");
+        model.addColumn("Last Name");
+        model.addColumn("Title");
+
+        String query = "SELECT EmployeeId, FirstName, LastName, Title FROM Employee;";
+
+        try (Connection conn = connect();
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query)) {
+
+        while (rs.next()) {
+            // Adding rows to the model like adding elements to a matrix
+            model.addRow(new Object[]{
+                rs.getInt("EmployeeId"),
+                rs.getString("FirstName"),
+                rs.getString("LastName"),
+                rs.getString("Title")
+            });
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+
+        return model;
     }
 
 }
