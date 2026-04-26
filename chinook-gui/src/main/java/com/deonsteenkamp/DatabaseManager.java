@@ -49,28 +49,35 @@ public class DatabaseManager {
 
         DefaultTableModel model = new DefaultTableModel();
         model.addColumn("ID");
-        model.addColumn("First Name");
-        model.addColumn("Last Name");
-        model.addColumn("Title");
+        model.addColumn("Full Name");
+        model.addColumn("Job Title");
+        model.addColumn("Manager"); // The data from the self-join
+        model.addColumn("Hire Date");
 
-        String query = "SELECT EmployeeId, FirstName, LastName, Title FROM Employee;";
+        String query = "SELECT e.EmployeeId, " +
+                "CONCAT(e.FirstName, ' ', e.LastName) AS EmployeeName, " +
+                "e.Title, " +
+                "CONCAT(m.FirstName, ' ', m.LastName) AS ManagerName, " +
+                "e.HireDate " +
+                "FROM Employee e " +
+                "LEFT JOIN Employee m ON e.ReportsTo = m.EmployeeId;";
 
         try (Connection conn = connect();
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(query)) {
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
 
-        while (rs.next()) {
-            // Adding rows to the model like adding elements to a matrix
-            model.addRow(new Object[]{
-                rs.getInt("EmployeeId"),
-                rs.getString("FirstName"),
-                rs.getString("LastName"),
-                rs.getString("Title")
-            });
+            while (rs.next()) {
+                model.addRow(new Object[] {
+                        rs.getInt("EmployeeId"),
+                        rs.getString("EmployeeName"),
+                        rs.getString("Title"),
+                        rs.getString("ManagerName") == null ? "N/A (Top Level)" : rs.getString("ManagerName"),
+                        rs.getString("HireDate")
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
 
         return model;
     }

@@ -17,6 +17,10 @@ public class MainFrame extends JFrame {
         DefaultTableModel employeeData = DatabaseManager.getEmployeesTableModel();
 
         JTable employeeTable = new JTable(employeeData);
+
+        
+        employeeTable.setAutoCreateRowSorter(true); 
+        employeeTable.setFillsViewportHeight(true);
         JScrollPane scrollPane = new JScrollPane(employeeTable);
         JPanel employeePanel = new JPanel(new BorderLayout());
         employeePanel.add(scrollPane, BorderLayout.CENTER);
