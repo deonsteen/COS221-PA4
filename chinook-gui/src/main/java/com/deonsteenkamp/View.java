@@ -8,6 +8,9 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 
 public class View extends JFrame {
+
+    private JTable reportTable;
+
     public View() {
         setTitle("Chinook Database GUI");
         setSize(800, 600);
@@ -18,8 +21,15 @@ public class View extends JFrame {
         
         tabbedPane.addTab("Employees", createEmployeesTab());
         tabbedPane.addTab("Tracks", createTracksTab());
-        tabbedPane.addTab("Customers", new JPanel()); // Placeholder for Task 4.5
+        tabbedPane.addTab("Report", createReportTab());
 
+        tabbedPane.addChangeListener(e -> {
+            // Index 2 is the "Report" tab
+            if (tabbedPane.getSelectedIndex() == 2) {
+                // Fetch fresh data and shove it into the VIP table
+                reportTable.setModel(DatabaseManager.getGenreRevenueTableModel());
+            }
+        });
         add(tabbedPane);
     }
 
@@ -125,4 +135,18 @@ public class View extends JFrame {
 
         return panel;
     }
+
+    //Reports Tab
+    private JPanel createReportTab(){
+        JPanel reportPanel = new JPanel(new BorderLayout());
+        
+        // Initialize the class-level table
+        reportTable = new JTable(); 
+        reportTable.setFillsViewportHeight(true);
+        
+        reportPanel.add(new JScrollPane(reportTable), BorderLayout.CENTER);
+        
+        // Return the constructed panel to the tabbed pane
+        return reportPanel;
+}
 }

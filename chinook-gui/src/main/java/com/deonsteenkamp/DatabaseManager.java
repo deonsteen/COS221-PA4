@@ -96,6 +96,37 @@ public class DatabaseManager {
         return model;
     }
 
+    public static DefaultTableModel getGenreRevenueTableModel() {
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("Genre");
+        model.addColumn("Total Revenue (R)");
+
+        String query = "SELECT g.Name AS Genre, SUM(il.UnitPrice * il.Quantity) AS TotalRevenue " +
+                "FROM Genre g " +
+                "JOIN Track t ON g.GenreId = t.GenreId " +
+                "JOIN InvoiceLine il ON t.TrackId = il.TrackId " +
+                "GROUP BY g.Name " +
+                "ORDER BY TotalRevenue DESC;";
+
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                model.addRow(new Object[] {
+                        rs.getString("Genre"),
+                        // String.format keeps the numbers looking like actual money (2 decimal places)
+                        String.format("%.2f", rs.getDouble("TotalRevenue"))
+                });
+            }
+        } catch (SQLException e) {
+            System.err.println("Your accountant SQL query failed.");
+            e.printStackTrace();
+        }
+
+        return model;
+    }
+
     public static void insertTrack(String name, int albumId, int mediaId, int genreId, double price) {
 
         int newTrackId = 1;
