@@ -11,7 +11,7 @@ public class App {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                MainFrame frame = new MainFrame();
+                View frame = new View();
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
             }

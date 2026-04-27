@@ -20,7 +20,7 @@ public class DatabaseManager {
 
     public static void testConnection() {
 
-        try (Connection conn = connect()){
+        try (Connection conn = connect()) {
 
             System.out.println("\n=== DATABASE CONNECTION SUCCESSFUL ===");
 
@@ -71,6 +71,121 @@ public class DatabaseManager {
         return model;
     }
 
+    public static DefaultTableModel getTracksTableModel() {
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("Track ID");
+        model.addColumn("Name");
+        model.addColumn("Unit Price");
 
-    
+        String query = "SELECT TrackId, Name, UnitPrice FROM Track;";
+
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                model.addRow(new Object[] {
+                        rs.getInt("TrackId"),
+                        rs.getString("Name"),
+                        rs.getDouble("UnitPrice")
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return model;
+    }
+
+    public static void insertTrack(String name, int albumId, int mediaId, int genreId, double price) {
+        String query = "INSERT INTO Track (Name, AlbumId, MediaTypeId, GenreId, Milliseconds, Bytes, UnitPrice) " +
+                "VALUES (?, ?, ?, ?, 200000, 5000000, ?)";
+
+        try (Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setString(1, name);
+            pstmt.setInt(2, albumId);
+            pstmt.setInt(3, mediaId);
+            pstmt.setInt(4, genreId);
+            pstmt.setDouble(5, price);
+
+            pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            System.err.println("Failed to insert the new track. Your SQL might be angry.");
+            e.printStackTrace();
+        }
+    }
+
+    public static ComboItem[] getAlbums() {
+        // We use a dynamic list and convert it to an array at the end
+        java.util.List<ComboItem> list = new java.util.ArrayList<>();
+        String query = "SELECT AlbumId, Title FROM Album ORDER BY Title;";
+
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                list.add(new ComboItem(rs.getInt("AlbumId"), rs.getString("Title")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list.toArray(new ComboItem[0]);
+    }
+
+    public static ComboItem[] getGenres() {
+        java.util.List<ComboItem> list = new java.util.ArrayList<>();
+        String query = "SELECT GenreId, Name FROM Genre ORDER BY Name;";
+
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                list.add(new ComboItem(rs.getInt("GenreId"), rs.getString("Name")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list.toArray(new ComboItem[0]);
+    }
+
+    public static ComboItem[] getMediaTypes() {
+        java.util.List<ComboItem> list = new java.util.ArrayList<>();
+        String query = "SELECT MediaTypeId, Name FROM MediaType ORDER BY Name;";
+
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                list.add(new ComboItem(rs.getInt("MediaTypeId"), rs.getString("Name")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list.toArray(new ComboItem[0]);
+    }
+
+    public static class ComboItem {
+        private int id;
+        private String name;
+
+        public ComboItem(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
 }
