@@ -23,7 +23,6 @@ public class DatabaseManager {
         try (Connection conn = connect()){
 
             System.out.println("\n=== DATABASE CONNECTION SUCCESSFUL ===");
-            System.out.println("======================================\n");
 
         } catch (SQLException e) {
             System.err.println("\n[ERROR] Database connection or query failed!");
