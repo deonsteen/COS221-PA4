@@ -2,6 +2,12 @@ package com.deonsteenkamp;
 
 import java.sql.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+import java.awt.*;
 
 public class DatabaseManager {
 
@@ -18,24 +24,11 @@ public class DatabaseManager {
         return DriverManager.getConnection(URL, USER, password);
     }
 
-    public static void testConnectionAndPull() {
-        String query = "SELECT FirstName, LastName, Title FROM Employee LIMIT 5;";
+    public static void testConnection() {
 
-        try (Connection conn = connect();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = connect()){
 
             System.out.println("\n=== DATABASE CONNECTION SUCCESSFUL ===");
-            System.out.println("Pulling top Employees from MariaDB:");
-
-            while (rs.next()) {
-                String firstName = rs.getString("FirstName");
-                String lastName = rs.getString("LastName");
-                String title = rs.getString("Title");
-
-                System.out.println("- " + firstName + " " + lastName + " (" + title + ")");
-            }
-
             System.out.println("======================================\n");
 
         } catch (SQLException e) {
@@ -85,4 +78,6 @@ public class DatabaseManager {
         return model;
     }
 
+
+    
 }

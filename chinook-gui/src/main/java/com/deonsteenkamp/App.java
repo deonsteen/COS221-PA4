@@ -6,7 +6,7 @@ public class App {
     public static void main( String[] args )
     {
 
-        DatabaseManager.testConnectionAndPull();
+        DatabaseManager.testConnection();
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
