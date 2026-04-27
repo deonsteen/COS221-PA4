@@ -97,22 +97,42 @@ public class DatabaseManager {
     }
 
     public static void insertTrack(String name, int albumId, int mediaId, int genreId, double price) {
-        String query = "INSERT INTO Track (Name, AlbumId, MediaTypeId, GenreId, Milliseconds, Bytes, UnitPrice) " +
-                "VALUES (?, ?, ?, ?, 200000, 5000000, ?)";
+
+        int newTrackId = 1;
+        String maxIdQuery = "SELECT MAX(TrackId) AS MaxId FROM Track;";
 
         try (Connection conn = connect();
-                PreparedStatement pstmt = conn.prepareStatement(query)) {
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(maxIdQuery)) {
 
-            pstmt.setString(1, name);
-            pstmt.setInt(2, albumId);
-            pstmt.setInt(3, mediaId);
-            pstmt.setInt(4, genreId);
-            pstmt.setDouble(5, price);
+            if (rs.next()) {
+                newTrackId = rs.getInt("MaxId") + 1;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Failed to calculate the next TrackId.");
+            e.printStackTrace();
+            return;
+        }
+
+        String insertQuery = "INSERT INTO Track (TrackId, Name, AlbumId, MediaTypeId, GenreId, Milliseconds, Bytes, UnitPrice) "
+                +
+                "VALUES (?, ?, ?, ?, ?, 200000, 5000000, ?)";
+
+        try (Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
+
+            pstmt.setInt(1, newTrackId);
+            pstmt.setString(2, name);
+            pstmt.setInt(3, albumId);
+            pstmt.setInt(4, mediaId);
+            pstmt.setInt(5, genreId);
+            pstmt.setDouble(6, price);
 
             pstmt.executeUpdate();
 
         } catch (SQLException e) {
-            System.err.println("Failed to insert the new track. Your SQL might be angry.");
+            System.err.println("Failed to insert the new track. Your SQL is still angry.");
             e.printStackTrace();
         }
     }
