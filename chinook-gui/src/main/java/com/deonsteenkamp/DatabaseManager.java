@@ -2,12 +2,6 @@ package com.deonsteenkamp;
 
 import java.sql.*;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
 
 public class DatabaseManager {
 
