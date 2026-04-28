@@ -3,9 +3,6 @@ package com.deonsteenkamp;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
-
-import com.mysql.cj.xdevapi.Table;
-
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
