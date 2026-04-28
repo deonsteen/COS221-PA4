@@ -5,17 +5,20 @@ import javax.swing.table.DefaultTableModel;
 
 public class DatabaseManager {
 
-    private static final String URL = "jdbc:mysql://localhost:3306/u25135742_chinook";
-    private static final String USER = "u25135742";
-
     public static Connection connect() throws SQLException {
 
-        String password = System.getenv("DB_PASSWORD");
+        String proto = System.getenv("CHINOOK_DB_PROTO");
+        String host = System.getenv("CHINOOK_DB_HOST");
+        String port = System.getenv("CHINOOK_DB_PORT");
+        String dbName = System.getenv("CHINOOK_DB_NAME");
+        String username = System.getenv("CHINOOK_DB_USERNAME");
+        String password = System.getenv("CHINOOK_DB_PASSWORD");
 
-        if (password == null) {
-            throw new IllegalStateException("Database password not set in environment variable DB_PASSWORD");
+        if (proto == null || host == null || port == null || dbName == null || username == null || password == null) {
+            throw new IllegalStateException("Missing environment variables");
         }
-        return DriverManager.getConnection(URL, USER, password);
+        String url = "jdbc:" + proto + "://" + host + ":" + port + "/" + dbName;
+        return DriverManager.getConnection(url, username, password);
     }
 
     public static void testConnection() {
