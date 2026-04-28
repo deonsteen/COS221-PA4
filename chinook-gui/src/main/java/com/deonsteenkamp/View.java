@@ -25,9 +25,8 @@ public class View extends JFrame {
         tabbedPane.addTab("Notifications", createNotificationsTab());
 
         tabbedPane.addChangeListener(e -> {
-            // Index 2 is the "Report" tab
             if (tabbedPane.getSelectedIndex() == 2) {
-                // Fetch fresh data and shove it into the VIP table
+
                 reportTable.setModel(DatabaseManager.getGenreRevenueTableModel());
             }
         });
@@ -155,25 +154,21 @@ public class View extends JFrame {
     private JPanel createNotificationsTab() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // 1. The Table (READ)
         JTable customerTable = new JTable(DatabaseManager.getCustomersTableModel());
         customerTable.setFillsViewportHeight(true);
         panel.add(new JScrollPane(customerTable), BorderLayout.CENTER);
 
-        // 2. The Form Panel (Inputs and Buttons)
         JPanel formPanel = new JPanel(new GridLayout(3, 1, 5, 5));
         panel.add(formPanel, BorderLayout.SOUTH);
 
-        // Text Fields
         JTextField txtId = new JTextField(); 
-        txtId.setEnabled(false); // ID is read-only, no touching.
+        txtId.setEnabled(false);
         JTextField txtFName = new JTextField();
         JTextField txtLName = new JTextField();
         JTextField txtEmail = new JTextField();
         JTextField txtPhone = new JTextField();
         JTextField txtCountry = new JTextField();
 
-        // Row 1 & 2: Labels and Inputs
         JPanel inputPanel = new JPanel(new GridLayout(2, 6, 5, 5));
         inputPanel.add(new JLabel("ID:")); inputPanel.add(txtId);
         inputPanel.add(new JLabel("First:")); inputPanel.add(txtFName);
@@ -183,7 +178,6 @@ public class View extends JFrame {
         inputPanel.add(new JLabel("Country:")); inputPanel.add(txtCountry);
         formPanel.add(inputPanel);
 
-        // Row 3: The CRUD Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout());
         JButton btnClear = new JButton("Clear Form");
         JButton btnAdd = new JButton("Add New");
@@ -194,11 +188,10 @@ public class View extends JFrame {
         buttonPanel.add(btnUpdate); buttonPanel.add(btnDelete);
         formPanel.add(buttonPanel);
 
-        // 3. THE MAGIC LISTENER: Click table row -> fill text boxes
         customerTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && customerTable.getSelectedRow() != -1) {
                 int row = customerTable.getSelectedRow();
-                // Map the data from the columns directly into the text fields
+
                 txtId.setText(customerTable.getValueAt(row, 0).toString());
                 txtFName.setText(customerTable.getValueAt(row, 1) != null ? customerTable.getValueAt(row, 1).toString() : "");
                 txtLName.setText(customerTable.getValueAt(row, 2) != null ? customerTable.getValueAt(row, 2).toString() : "");
@@ -208,22 +201,18 @@ public class View extends JFrame {
             }
         });
 
-        // 4. BUTTON ACTIONS
-        // CLEAR Form
         btnClear.addActionListener(e -> {
             customerTable.clearSelection();
             txtId.setText(""); txtFName.setText(""); txtLName.setText("");
             txtEmail.setText(""); txtPhone.setText(""); txtCountry.setText("");
         });
 
-        // CREATE (Add New)
         btnAdd.addActionListener(e -> {
             DatabaseManager.insertCustomer(txtFName.getText(), txtLName.getText(), txtEmail.getText(), txtPhone.getText(), txtCountry.getText());
             customerTable.setModel(DatabaseManager.getCustomersTableModel()); // Refresh table
             btnClear.doClick(); // Reset form
         });
 
-        // UPDATE
         btnUpdate.addActionListener(e -> {
             if (!txtId.getText().isEmpty()) {
                 int id = Integer.parseInt(txtId.getText());
@@ -234,7 +223,7 @@ public class View extends JFrame {
             }
         });
 
-        // DELETE
+
         btnDelete.addActionListener(e -> {
             if (!txtId.getText().isEmpty()) {
                 int id = Integer.parseInt(txtId.getText());
