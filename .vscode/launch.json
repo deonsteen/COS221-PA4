@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "com.deonsteenkamp.App",
+            "projectName": "chinook-gui"
+        },
+        {
+            "type": "java",
+            "name": "Run App",
+            "request": "launch",
+            "mainClass": "com.deonsteenkamp.App",
+            "projectName": "chinook-gui",
+            "env": {
+                "CHINOOK_DB_PROTO": "mysql",
+                "CHINOOK_DB_HOST": "localhost",
+                "CHINOOK_DB_PORT": "3306",
+                "CHINOOK_DB_NAME": "u25135742_chinook",
+                "CHINOOK_DB_USERNAME": "root",
+                "CHINOOK_DB_PASSWORD": "Bytjie2006!"
+            }
+        }
+    ]
+}
