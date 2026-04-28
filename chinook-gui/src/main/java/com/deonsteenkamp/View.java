@@ -22,6 +22,7 @@ public class View extends JFrame {
         tabbedPane.addTab("Employees", createEmployeesTab());
         tabbedPane.addTab("Tracks", createTracksTab());
         tabbedPane.addTab("Report", createReportTab());
+        tabbedPane.addTab("Notifications", createNotificationsTab());
 
         tabbedPane.addChangeListener(e -> {
             // Index 2 is the "Report" tab
@@ -149,4 +150,110 @@ public class View extends JFrame {
         // Return the constructed panel to the tabbed pane
         return reportPanel;
 }
+
+    //Notifications Tab CRUD
+    private JPanel createNotificationsTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 1. The Table (READ)
+        JTable customerTable = new JTable(DatabaseManager.getCustomersTableModel());
+        customerTable.setFillsViewportHeight(true);
+        panel.add(new JScrollPane(customerTable), BorderLayout.CENTER);
+
+        // 2. The Form Panel (Inputs and Buttons)
+        JPanel formPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+        panel.add(formPanel, BorderLayout.SOUTH);
+
+        // Text Fields
+        JTextField txtId = new JTextField(); 
+        txtId.setEnabled(false); // ID is read-only, no touching.
+        JTextField txtFName = new JTextField();
+        JTextField txtLName = new JTextField();
+        JTextField txtEmail = new JTextField();
+        JTextField txtPhone = new JTextField();
+        JTextField txtCountry = new JTextField();
+
+        // Row 1 & 2: Labels and Inputs
+        JPanel inputPanel = new JPanel(new GridLayout(2, 6, 5, 5));
+        inputPanel.add(new JLabel("ID:")); inputPanel.add(txtId);
+        inputPanel.add(new JLabel("First:")); inputPanel.add(txtFName);
+        inputPanel.add(new JLabel("Last:")); inputPanel.add(txtLName);
+        inputPanel.add(new JLabel("Email:")); inputPanel.add(txtEmail);
+        inputPanel.add(new JLabel("Phone:")); inputPanel.add(txtPhone);
+        inputPanel.add(new JLabel("Country:")); inputPanel.add(txtCountry);
+        formPanel.add(inputPanel);
+
+        // Row 3: The CRUD Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton btnClear = new JButton("Clear Form");
+        JButton btnAdd = new JButton("Add New");
+        JButton btnUpdate = new JButton("Update Selected");
+        JButton btnDelete = new JButton("Delete Selected");
+        
+        buttonPanel.add(btnClear); buttonPanel.add(btnAdd); 
+        buttonPanel.add(btnUpdate); buttonPanel.add(btnDelete);
+        formPanel.add(buttonPanel);
+
+        // 3. THE MAGIC LISTENER: Click table row -> fill text boxes
+        customerTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && customerTable.getSelectedRow() != -1) {
+                int row = customerTable.getSelectedRow();
+                // Map the data from the columns directly into the text fields
+                txtId.setText(customerTable.getValueAt(row, 0).toString());
+                txtFName.setText(customerTable.getValueAt(row, 1) != null ? customerTable.getValueAt(row, 1).toString() : "");
+                txtLName.setText(customerTable.getValueAt(row, 2) != null ? customerTable.getValueAt(row, 2).toString() : "");
+                txtEmail.setText(customerTable.getValueAt(row, 3) != null ? customerTable.getValueAt(row, 3).toString() : "");
+                txtPhone.setText(customerTable.getValueAt(row, 4) != null ? customerTable.getValueAt(row, 4).toString() : "");
+                txtCountry.setText(customerTable.getValueAt(row, 5) != null ? customerTable.getValueAt(row, 5).toString() : "");
+            }
+        });
+
+        // 4. BUTTON ACTIONS
+        // CLEAR Form
+        btnClear.addActionListener(e -> {
+            customerTable.clearSelection();
+            txtId.setText(""); txtFName.setText(""); txtLName.setText("");
+            txtEmail.setText(""); txtPhone.setText(""); txtCountry.setText("");
+        });
+
+        // CREATE (Add New)
+        btnAdd.addActionListener(e -> {
+            DatabaseManager.insertCustomer(txtFName.getText(), txtLName.getText(), txtEmail.getText(), txtPhone.getText(), txtCountry.getText());
+            customerTable.setModel(DatabaseManager.getCustomersTableModel()); // Refresh table
+            btnClear.doClick(); // Reset form
+        });
+
+        // UPDATE
+        btnUpdate.addActionListener(e -> {
+            if (!txtId.getText().isEmpty()) {
+                int id = Integer.parseInt(txtId.getText());
+                DatabaseManager.updateCustomer(id, txtFName.getText(), txtLName.getText(), txtEmail.getText(), txtPhone.getText(), txtCountry.getText());
+                customerTable.setModel(DatabaseManager.getCustomersTableModel());
+            } else {
+                JOptionPane.showMessageDialog(panel, "Please select a customer to update.");
+            }
+        });
+
+        // DELETE
+        btnDelete.addActionListener(e -> {
+            if (!txtId.getText().isEmpty()) {
+                int id = Integer.parseInt(txtId.getText());
+                int confirm = JOptionPane.showConfirmDialog(panel, "Are you sure you want to delete this customer?", "Confirm", JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    boolean success = DatabaseManager.deleteCustomer(id);
+                    if (success) {
+                        customerTable.setModel(DatabaseManager.getCustomersTableModel());
+                        btnClear.doClick();
+                    } else {
+                        JOptionPane.showMessageDialog(panel, "Cannot delete! This customer has purchase history. You can't just erase the people giving you money.", "Database Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(panel, "Please select a customer to delete.");
+            }
+        });
+
+        return panel;
+    }
+
 }

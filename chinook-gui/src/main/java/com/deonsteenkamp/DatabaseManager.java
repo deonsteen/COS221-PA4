@@ -239,4 +239,93 @@ public class DatabaseManager {
         }
     }
 
+    // task 4.5 Read
+    public static DefaultTableModel getCustomersTableModel() {
+
+        String query = "SELECT CustomerId, FirstName, LastName, Email, Phone, Country FROM Customer;";
+        DefaultTableModel model = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        model.addColumn("ID");
+        model.addColumn("First Name");
+        model.addColumn("Last Name");
+        model.addColumn("Email");
+        model.addColumn("Phone");
+        model.addColumn("Country");
+
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                model.addRow(new Object[] {
+                        rs.getInt("CustomerId"), rs.getString("FirstName"), rs.getString("LastName"),
+                        rs.getString("Email"), rs.getString("Phone"), rs.getString("Country")
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return model;
+    }
+
+    // Create
+    public static void insertCustomer(String fName, String lName, String email, String phone, String country) {
+
+        String query = "INSERT INTO Customer (CustomerId, FirstName, LastName, Email, Phone, Country) VALUES (?, ?, ?, ?, ?, ?)";
+        int newId = 1;
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT MAX(CustomerId) AS MaxId FROM Customer")) {
+            if (rs.next())
+                newId = rs.getInt("MaxId") + 1;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, newId);
+            pstmt.setString(2, fName);
+            pstmt.setString(3, lName);
+            pstmt.setString(4, email);
+            pstmt.setString(5, phone);
+            pstmt.setString(6, country);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Update
+    public static void updateCustomer(int id, String fName, String lName, String email, String phone, String country) {
+        String query = "UPDATE Customer SET FirstName=?, LastName=?, Email=?, Phone=?, Country=? WHERE CustomerId=?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, fName);
+            pstmt.setString(2, lName);
+            pstmt.setString(3, email);
+            pstmt.setString(4, phone);
+            pstmt.setString(5, country);
+            pstmt.setInt(6, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Delete
+    public static boolean deleteCustomer(int id) {
+        String query = "DELETE FROM Customer WHERE CustomerId=?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, id);
+            pstmt.executeUpdate();
+            return true; // Success
+        } catch (SQLException e) {
+            // Fails if the customer has existing invoices (Foreign Key Constraint)
+            return false;
+        }
+    }
 }
