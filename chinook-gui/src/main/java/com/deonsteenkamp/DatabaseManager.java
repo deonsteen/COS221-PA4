@@ -220,6 +220,45 @@ public class DatabaseManager {
         return list.toArray(new ComboItem[0]);
     }
 
+    public static ComboItem[] getCustomerComboItems() {
+        java.util.List<ComboItem> list = new java.util.ArrayList<>();
+        String query = "SELECT CustomerId, FirstName, LastName FROM Customer ORDER BY LastName, FirstName;";
+
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                String fullName = rs.getString("FirstName") + " " + rs.getString("LastName");
+                list.add(new ComboItem(rs.getInt("CustomerId"), fullName));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list.toArray(new ComboItem[0]);
+    }
+
+    public static String[] getCustomerSummary(int customerId) {
+        String[] summary = new String[] { "R0.00", "0", "Never" };
+        String query = "SELECT SUM(Total) AS TotalSpent, COUNT(invoiceId) AS TotalPurchases, MAX(InvoiceDate) AS LastPurchase "
+                +
+                "FROM Invoice WHERE CustomerId = ?;";
+        try (Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, customerId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    summary[0] = "R" + rs.getDouble("TotalSpent");
+                    summary[1] = String.valueOf(rs.getInt("TotalPurchases"));
+                    summary[2] = rs.getString("LastPurchase");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return summary;
+    }
+
     public static class ComboItem {
         private int id;
         private String name;
@@ -325,7 +364,7 @@ public class DatabaseManager {
         }
     }
 
-    //Inactive customers
+    // Inactive customers
     public static DefaultTableModel getInactiveCustomersModel() {
         DefaultTableModel model = new DefaultTableModel() {
             @Override
@@ -343,14 +382,14 @@ public class DatabaseManager {
                 "FROM Customer c " +
                 "LEFT JOIN Invoice i ON c.CustomerId = i.CustomerId " +
                 "GROUP BY c.CustomerId " +
-                "HAVING LastPurchase IS NULL OR LastPurchase < DATE_SUB(CURDATE(), INTERVAL 2 YEAR);";
+                "HAVING MAX(i.InvoiceDate) IS NULL OR MAX(i.InvoiceDate) < DATE_SUB(CURDATE(), INTERVAL 1 YEAR);";
 
         try (Connection conn = connect();
                 Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(query)) {
 
             while (rs.next()) {
-                
+
                 String lastDate = rs.getString("LastPurchase");
                 String displayDate = (lastDate == null) ? "Never Bought" : lastDate;
 
@@ -361,6 +400,65 @@ public class DatabaseManager {
             }
         } catch (SQLException e) {
             System.err.println("Failed to find the inactive customers.");
+            e.printStackTrace();
+        }
+        return model;
+    }
+
+    public static String getFavoriteGenre(int customerId) {
+        String query = "SELECT g.Name AS Genre, COUNT(il.TrackId) AS PurchaseCount " +
+                "FROM Invoice i " +
+                "JOIN InvoiceLine il ON i.InvoiceId = il.InvoiceId " +
+                "JOIN Track t ON il.TrackId = t.TrackId " +
+                "JOIN Genre g ON t.GenreId = g.GenreId " +
+                "WHERE i.CustomerId = ? " +
+                "GROUP BY g.GenreId, g.Name " +
+                "ORDER BY PurchaseCount DESC " +
+                "LIMIT 1;";
+
+        String favoriteGenre = "Unknown";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, customerId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    favoriteGenre = rs.getString("Genre");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return favoriteGenre;
+    }
+
+    public static DefaultTableModel getRecommendationsModel(int customerId, String favoriteGenre) {
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("Track Name");
+        model.addColumn("Artist");
+        model.addColumn("Album");
+        model.addColumn("Price");
+
+        String query = "SELECT t.TrackId, t.Name AS TrackName, a.Title AS Album, t.UnitPrice " +
+                "FROM Track t " +
+                "JOIN Album a ON t.AlbumId = a.AlbumId " +
+                "JOIN Genre g ON t.GenreId = g.GenreId " +
+                "WHERE g.Name = ? AND t.TrackId NOT IN ( " +
+                "    SELECT il.TrackId FROM Invoice i " +
+                "    JOIN InvoiceLine il ON i.InvoiceId = il.InvoiceId " +
+                "    WHERE i.CustomerId = ?)" +
+                "LIMIT 15;";
+
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, favoriteGenre);
+            pstmt.setInt(2, customerId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    model.addRow(new Object[] {
+                            rs.getString("TrackId"), rs.getString("TrackName"),
+                            rs.getString("Album"), String.format("R%.2f", rs.getDouble("UnitPrice"))
+                    });
+                }
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         return model;

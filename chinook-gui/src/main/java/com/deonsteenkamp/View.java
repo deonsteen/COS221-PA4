@@ -26,6 +26,7 @@ public class View extends JFrame {
         tabbedPane.addTab("Tracks", createTracksTab());
         tabbedPane.addTab("Report", createReportTab());
         tabbedPane.addTab("Notifications", createNotificationsTab());
+        tabbedPane.addTab("Insights & Recommendations", createRecommendationsTab());
 
         tabbedPane.addChangeListener(e -> {
             if (tabbedPane.getSelectedIndex() == 2) {
@@ -165,23 +166,6 @@ public class View extends JFrame {
         TableRowSorter<DefaultTableModel> crudSorter = new TableRowSorter<>(crudModel);
         customerTable.setRowSorter(crudSorter);
 
-        JPanel topSearchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topSearchPanel.add(new JLabel("Search All Customers:"));
-        JTextField searchFieldAll = new JTextField(20);
-        topSearchPanel.add(searchFieldAll);
-        
-        searchFieldAll.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { filter(); }
-            public void removeUpdate(DocumentEvent e) { filter(); }
-            public void changedUpdate(DocumentEvent e) { filter(); }
-            private void filter() {
-                String text = searchFieldAll.getText();
-                if (text.trim().length() == 0) crudSorter.setRowFilter(null);
-                else crudSorter.setRowFilter(RowFilter.regexFilter("(?i)" + text)); // Searches all columns
-            }
-        });
-
-        managePanel.add(topSearchPanel, BorderLayout.NORTH);
         managePanel.add(new JScrollPane(customerTable), BorderLayout.CENTER);
 
         JPanel formPanel = new JPanel(new GridLayout(3, 1, 5, 5));
@@ -226,7 +210,6 @@ public class View extends JFrame {
         });
 
         btnClear.addActionListener(e -> {
-            customerTable.clearSelection(); searchFieldAll.setText("");
             txtId.setText(""); txtFName.setText(""); txtLName.setText("");
             txtEmail.setText(""); txtPhone.setText(""); txtCountry.setText("");
         });
@@ -276,4 +259,60 @@ public class View extends JFrame {
         return masterPanel;
     }
 
+    private JPanel createRecommendationsTab() {
+        JPanel mainPanel = new JPanel(new BorderLayout(10,10));
+        
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topPanel.add(new JLabel("Select Customer:"));
+
+        DatabaseManager.ComboItem[] customers = DatabaseManager.getCustomerComboItems();
+        JComboBox<DatabaseManager.ComboItem> customerBox = new JComboBox<>(customers);
+        topPanel.add(customerBox);
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+
+        JPanel summaryPannel = new JPanel(new GridLayout(2, 2, 10, 10));
+        summaryPannel.setBorder(BorderFactory.createTitledBorder("Customer Insights"));
+        
+        JLabel lblTotalSPent = new JLabel("Total Spent: R0.00");
+        JLabel lblTotalPurchases = new JLabel("Total Purchases: 0");
+        JLabel lblLastPurchas = new JLabel("Last Purchase: N/A");
+        JLabel lblFavGenre = new JLabel("Favorite Genre: N/A");
+
+        summaryPannel.add(lblTotalSPent);
+        summaryPannel.add(lblTotalPurchases);
+        summaryPannel.add(lblLastPurchas);
+        summaryPannel.add(lblFavGenre);
+
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setBorder(BorderFactory.createTitledBorder("Recommended Tracks"));
+        JTable RecommendationsTable = new JTable();
+        tablePanel.add(new JScrollPane(RecommendationsTable), BorderLayout.CENTER);
+        
+        JPanel centerWrapper = new JPanel(new BorderLayout());
+        centerWrapper.add(summaryPannel, BorderLayout.NORTH);
+        centerWrapper.add(tablePanel, BorderLayout.CENTER);
+        mainPanel.add(centerWrapper, BorderLayout.CENTER);
+
+        customerBox.addActionListener(e -> {
+            DatabaseManager.ComboItem selectedCustomer = (DatabaseManager.ComboItem) customerBox.getSelectedItem();
+            if (selectedCustomer != null) {
+                int customerId = selectedCustomer.getId();
+
+                String[] summary = DatabaseManager.getCustomerSummary(customerId);
+                String favoriteGenre = DatabaseManager.getFavoriteGenre(customerId);
+
+                lblTotalSPent.setText("Total Spent: " + summary[0]);
+                lblTotalPurchases.setText("Total Purchases: " + summary[1]);
+                lblLastPurchas.setText("Last Purchase: " + summary[2]);
+                lblFavGenre.setText("Favorite Genre: " + favoriteGenre);
+                RecommendationsTable.setModel(DatabaseManager.getRecommendationsModel(customerId, favoriteGenre));
+            }
+        });
+
+        if (customerBox.getItemCount() > 0) {
+            customerBox.setSelectedIndex(0); // Trigger initial load
+            
+        }
+        return mainPanel;
+    }
 }
