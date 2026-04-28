@@ -3,6 +3,9 @@ package com.deonsteenkamp;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
+
+import com.mysql.cj.xdevapi.Table;
+
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
@@ -150,23 +153,41 @@ public class View extends JFrame {
         return reportPanel;
 }
 
-    //Notifications Tab CRUD
     private JPanel createNotificationsTab() {
-        JPanel panel = new JPanel(new BorderLayout());
+        
+        JPanel masterPanel = new JPanel(new BorderLayout());
+        JTabbedPane subTabbedPane = new JTabbedPane();
+        JPanel managePanel = new JPanel(new BorderLayout());
 
-        JTable customerTable = new JTable(DatabaseManager.getCustomersTableModel());
+        DefaultTableModel crudModel = DatabaseManager.getCustomersTableModel();
+        JTable customerTable = new JTable(crudModel);
         customerTable.setFillsViewportHeight(true);
-        panel.add(new JScrollPane(customerTable), BorderLayout.CENTER);
+        TableRowSorter<DefaultTableModel> crudSorter = new TableRowSorter<>(crudModel);
+        customerTable.setRowSorter(crudSorter);
+
+        JPanel topSearchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topSearchPanel.add(new JLabel("Search All Customers:"));
+        JTextField searchFieldAll = new JTextField(20);
+        topSearchPanel.add(searchFieldAll);
+        
+        searchFieldAll.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { filter(); }
+            public void removeUpdate(DocumentEvent e) { filter(); }
+            public void changedUpdate(DocumentEvent e) { filter(); }
+            private void filter() {
+                String text = searchFieldAll.getText();
+                if (text.trim().length() == 0) crudSorter.setRowFilter(null);
+                else crudSorter.setRowFilter(RowFilter.regexFilter("(?i)" + text)); // Searches all columns
+            }
+        });
+
+        managePanel.add(topSearchPanel, BorderLayout.NORTH);
+        managePanel.add(new JScrollPane(customerTable), BorderLayout.CENTER);
 
         JPanel formPanel = new JPanel(new GridLayout(3, 1, 5, 5));
-        panel.add(formPanel, BorderLayout.SOUTH);
-
-        JTextField txtId = new JTextField(); 
-        txtId.setEnabled(false);
-        JTextField txtFName = new JTextField();
-        JTextField txtLName = new JTextField();
-        JTextField txtEmail = new JTextField();
-        JTextField txtPhone = new JTextField();
+        JTextField txtId = new JTextField(); txtId.setEnabled(false);
+        JTextField txtFName = new JTextField(); JTextField txtLName = new JTextField();
+        JTextField txtEmail = new JTextField(); JTextField txtPhone = new JTextField();
         JTextField txtCountry = new JTextField();
 
         JPanel inputPanel = new JPanel(new GridLayout(2, 6, 5, 5));
@@ -187,62 +208,72 @@ public class View extends JFrame {
         buttonPanel.add(btnClear); buttonPanel.add(btnAdd); 
         buttonPanel.add(btnUpdate); buttonPanel.add(btnDelete);
         formPanel.add(buttonPanel);
+        managePanel.add(formPanel, BorderLayout.SOUTH);
+
 
         customerTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && customerTable.getSelectedRow() != -1) {
-                int row = customerTable.getSelectedRow();
-
-                txtId.setText(customerTable.getValueAt(row, 0).toString());
-                txtFName.setText(customerTable.getValueAt(row, 1) != null ? customerTable.getValueAt(row, 1).toString() : "");
-                txtLName.setText(customerTable.getValueAt(row, 2) != null ? customerTable.getValueAt(row, 2).toString() : "");
-                txtEmail.setText(customerTable.getValueAt(row, 3) != null ? customerTable.getValueAt(row, 3).toString() : "");
-                txtPhone.setText(customerTable.getValueAt(row, 4) != null ? customerTable.getValueAt(row, 4).toString() : "");
-                txtCountry.setText(customerTable.getValueAt(row, 5) != null ? customerTable.getValueAt(row, 5).toString() : "");
+                int viewRow = customerTable.getSelectedRow();
+                int modelRow = customerTable.convertRowIndexToModel(viewRow);
+                
+                txtId.setText(customerTable.getModel().getValueAt(modelRow, 0).toString());
+                txtFName.setText(customerTable.getModel().getValueAt(modelRow, 1) != null ? customerTable.getModel().getValueAt(modelRow, 1).toString() : "");
+                txtLName.setText(customerTable.getModel().getValueAt(modelRow, 2) != null ? customerTable.getModel().getValueAt(modelRow, 2).toString() : "");
+                txtEmail.setText(customerTable.getModel().getValueAt(modelRow, 3) != null ? customerTable.getModel().getValueAt(modelRow, 3).toString() : "");
+                txtPhone.setText(customerTable.getModel().getValueAt(modelRow, 4) != null ? customerTable.getModel().getValueAt(modelRow, 4).toString() : "");
+                txtCountry.setText(customerTable.getModel().getValueAt(modelRow, 5) != null ? customerTable.getModel().getValueAt(modelRow, 5).toString() : "");
             }
         });
 
         btnClear.addActionListener(e -> {
-            customerTable.clearSelection();
+            customerTable.clearSelection(); searchFieldAll.setText("");
             txtId.setText(""); txtFName.setText(""); txtLName.setText("");
             txtEmail.setText(""); txtPhone.setText(""); txtCountry.setText("");
         });
 
         btnAdd.addActionListener(e -> {
             DatabaseManager.insertCustomer(txtFName.getText(), txtLName.getText(), txtEmail.getText(), txtPhone.getText(), txtCountry.getText());
-            customerTable.setModel(DatabaseManager.getCustomersTableModel()); // Refresh table
-            btnClear.doClick(); // Reset form
+            customerTable.setModel(DatabaseManager.getCustomersTableModel()); 
+            customerTable.setRowSorter(new TableRowSorter<>((DefaultTableModel) customerTable.getModel())); // Reset sorter
+            btnClear.doClick(); 
         });
 
         btnUpdate.addActionListener(e -> {
             if (!txtId.getText().isEmpty()) {
-                int id = Integer.parseInt(txtId.getText());
-                DatabaseManager.updateCustomer(id, txtFName.getText(), txtLName.getText(), txtEmail.getText(), txtPhone.getText(), txtCountry.getText());
+                DatabaseManager.updateCustomer(Integer.parseInt(txtId.getText()), txtFName.getText(), txtLName.getText(), txtEmail.getText(), txtPhone.getText(), txtCountry.getText());
                 customerTable.setModel(DatabaseManager.getCustomersTableModel());
-            } else {
-                JOptionPane.showMessageDialog(panel, "Please select a customer to update.");
+                customerTable.setRowSorter(new TableRowSorter<>((DefaultTableModel) customerTable.getModel()));
             }
         });
-
 
         btnDelete.addActionListener(e -> {
             if (!txtId.getText().isEmpty()) {
-                int id = Integer.parseInt(txtId.getText());
-                int confirm = JOptionPane.showConfirmDialog(panel, "Are you sure you want to delete this customer?", "Confirm", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    boolean success = DatabaseManager.deleteCustomer(id);
-                    if (success) {
+                if (JOptionPane.showConfirmDialog(managePanel, "Delete this customer?", "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                    if (DatabaseManager.deleteCustomer(Integer.parseInt(txtId.getText()))) {
                         customerTable.setModel(DatabaseManager.getCustomersTableModel());
+                        customerTable.setRowSorter(new TableRowSorter<>((DefaultTableModel) customerTable.getModel()));
                         btnClear.doClick();
-                    } else {
-                        JOptionPane.showMessageDialog(panel, "Cannot delete! This customer has purchase history. You can't just erase the people giving you money.", "Database Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    } else JOptionPane.showMessageDialog(managePanel, "Cannot delete! Customer has purchase history.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            } else {
-                JOptionPane.showMessageDialog(panel, "Please select a customer to delete.");
             }
         });
 
-        return panel;
+        JPanel inactivePanel = new JPanel(new BorderLayout());
+        JTable inactiveTable = new JTable(DatabaseManager.getInactiveCustomersModel());
+        inactiveTable.setFillsViewportHeight(true);
+        inactivePanel.add(new JScrollPane(inactiveTable), BorderLayout.CENTER);
+
+        subTabbedPane.addTab("Manage Customers", managePanel);
+        subTabbedPane.addTab("Inactive Report", inactivePanel);
+
+        subTabbedPane.addChangeListener(e -> {
+            if (subTabbedPane.getSelectedIndex() == 1) {
+                inactiveTable.setModel(DatabaseManager.getInactiveCustomersModel());
+            }
+        });
+
+        masterPanel.add(subTabbedPane, BorderLayout.CENTER);
+        return masterPanel;
     }
 
 }

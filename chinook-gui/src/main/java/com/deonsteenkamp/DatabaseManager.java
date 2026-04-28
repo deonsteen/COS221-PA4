@@ -241,7 +241,6 @@ public class DatabaseManager {
 
     // task 4.5 Read
     public static DefaultTableModel getCustomersTableModel() {
-
         String query = "SELECT CustomerId, FirstName, LastName, Email, Phone, Country FROM Customer;";
         DefaultTableModel model = new DefaultTableModel() {
             @Override
@@ -273,7 +272,6 @@ public class DatabaseManager {
 
     // Create
     public static void insertCustomer(String fName, String lName, String email, String phone, String country) {
-
         String query = "INSERT INTO Customer (CustomerId, FirstName, LastName, Email, Phone, Country) VALUES (?, ?, ?, ?, ?, ?)";
         int newId = 1;
         try (Connection conn = connect();
@@ -286,7 +284,6 @@ public class DatabaseManager {
             return;
         }
 
-        
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setInt(1, newId);
             pstmt.setString(2, fName);
@@ -322,10 +319,50 @@ public class DatabaseManager {
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setInt(1, id);
             pstmt.executeUpdate();
-            return true; // Success
+            return true;
         } catch (SQLException e) {
-            // Fails if the customer has existing invoices (Foreign Key Constraint)
             return false;
         }
+    }
+
+    //Inactive customers
+    public static DefaultTableModel getInactiveCustomersModel() {
+        DefaultTableModel model = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        model.addColumn("ID");
+        model.addColumn("First Name");
+        model.addColumn("Last Name");
+        model.addColumn("Email");
+        model.addColumn("Last Purchase Date");
+
+        String query = "SELECT c.CustomerId, c.FirstName, c.LastName, c.Email, MAX(i.InvoiceDate) as LastPurchase " +
+                "FROM Customer c " +
+                "LEFT JOIN Invoice i ON c.CustomerId = i.CustomerId " +
+                "GROUP BY c.CustomerId " +
+                "HAVING LastPurchase IS NULL OR LastPurchase < DATE_SUB(CURDATE(), INTERVAL 2 YEAR);";
+
+        try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                
+                String lastDate = rs.getString("LastPurchase");
+                String displayDate = (lastDate == null) ? "Never Bought" : lastDate;
+
+                model.addRow(new Object[] {
+                        rs.getInt("CustomerId"), rs.getString("FirstName"),
+                        rs.getString("LastName"), rs.getString("Email"), displayDate
+                });
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to find the inactive customers.");
+            e.printStackTrace();
+        }
+        return model;
     }
 }
